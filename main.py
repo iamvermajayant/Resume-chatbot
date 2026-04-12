@@ -1,33 +1,55 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from fastapi.middleware.cors import CORSMiddleware
-from config import settings
 import logging
 import os
 
-# Configure logging
+# Configure logging FIRST
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+try:
+    logger.info("Starting application import...")
+    from fastapi import FastAPI, HTTPException
+    from pydantic import BaseModel
+    from fastapi.middleware.cors import CORSMiddleware
+    logger.info("FastAPI imports successful")
+    
+    from config import settings
+    logger.info("Config loaded successfully")
+    
+    app = FastAPI(title="Resume Chatbot API", version="1.0.0")
+    logger.info("FastAPI app created successfully")
+    
+except Exception as e:
+    logger.error(f"Failed to initialize app: {str(e)}")
+    raise
 
 # CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+try:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    logger.info("CORS middleware added successfully")
+except Exception as e:
+    logger.error(f"Failed to add CORS middleware: {str(e)}")
+    raise
 
 # Request model
 class QueryRequest(BaseModel):
     query: str
 
+# Startup event
+@app.on_event("startup")
+async def startup_event():
+    logger.info("🚀 Application startup complete")
+    logger.info(f"PORT environment variable: {os.environ.get('PORT', 'Not set')}")
+
 # Root route
 @app.get("/")
 def home():
-    logger.info("✅ Server started successfully")
+    logger.info("✅ Root endpoint accessed")
     port = os.environ.get("PORT", "Not set")
     return {
         "message": "🚀 Resume Chatbot API running",
@@ -81,6 +103,11 @@ def debug():
 @app.get("/health")
 def health():
     return {"status": "healthy", "port": os.environ.get("PORT", "Not set")}
+
+# Simple ping route
+@app.get("/ping")
+def ping():
+    return {"message": "pong"}
 
 
 # Server startup for production
