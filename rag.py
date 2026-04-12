@@ -1,24 +1,25 @@
 from config import settings
-from embed import get_embedding
-from db import query_db
-from google import genai
-
-# Initialize client
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
-
 
 def generate_answer(query):
+    from embed import get_embedding
+    from store import search
+    from google import genai
+
+    # Init Gemini inside function
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
     # Step 1: Embed query
     query_embedding = get_embedding([query])[0]
 
-    # Step 2: Retrieve context
-    docs = query_db(query_embedding)
+    # Step 2: Search similar chunks
+    docs = search(query_embedding, top_k=3)
+
     context = "\n".join(docs)
 
     # Step 3: Prompt
     prompt = f"""
     You are Jayant's AI assistant.
-    Answer ONLY from the context below.
+    Answer ONLY from the context.
 
     Context:
     {context}
@@ -26,12 +27,12 @@ def generate_answer(query):
     Question:
     {query}
 
-    If not found, say: "I don't have that information."
+    If not found, say "I don't have that information."
     """
 
-    # ✅ NEW API CALL
+    # Step 4: Gemini call
     response = client.models.generate_content(
-        model="gemini-2.5-flash",   # ✅ correct model
+        model="gemini-2.5-flash",
         contents=prompt
     )
 

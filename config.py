@@ -1,14 +1,12 @@
-import os
+from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
 
-class Settings:
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    CHROMA_DB_DIR = os.getenv("CHROMA_DB_DIR", "./chroma_db")
-    ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+class Settings(BaseSettings):
+    GEMINI_API_KEY: str
+    ALLOWED_ORIGINS: list[str] = ["*"]
+    CHROMA_DB_DIR: str = "./chroma_db"
 
 settings = Settings()
-
-if not settings.GEMINI_API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY is missing in .env")
